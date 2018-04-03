@@ -13,7 +13,7 @@ library(tibble)
 library(dplyr)
 library(DT)
 
-gb <- read_csv("data/guestbook.csv")
+gb_static <- read_csv("data/guestbook.csv")
 
 # Define UI for application that draws a histogram
 ui <- fluidPage(
@@ -34,26 +34,31 @@ ui <- fluidPage(
       
       # https://shiny.rstudio.com/reference/shiny/1.0.5/renderDataTable.html
       mainPanel(
-         DTOutput('table')
+        DTOutput('table')
       )
    )
 )
 
-# Define server logic required to draw a histogram
+# Define server logic
 server <- function(input, output) {
    
-   output$table <- renderDT(gb)
+  gb <- reactiveVal(gb_static)
+  
+  output$table <- renderDT(gb())
    
-   observeEvent(input$do, {
-     newsign <- tibble(
-       name     = input$name,
-       date     = input$date,
-       message  = input$msg
-     )
-     
-     gb <- bind_rows(gb, newsign)
-     write_csv(gb, "data/guestbook.csv")
-   })
+  observeEvent(input$do, {
+   newsign <- tibble(
+     name     = input$name,
+     date     = input$date,
+     message  = input$msg
+   )
+  
+   # updating reactiveVal or vals: 
+   # http://shiny.rstudio.com/reference/shiny/1.0.5/reactiveVal.html
+   
+   gb(bind_rows(gb(), newsign)) #syntax for updating a reactive val
+   write_csv(gb(), "data/guestbook.csv")
+  })
 }
 
 # Run the application 
